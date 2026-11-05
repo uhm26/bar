@@ -39,7 +39,7 @@ jobs:
         run: |
           runuser -u tester -- env XDG_RUNTIME_DIR=/run/user/1000 dbus-run-session -- sh -c '
             printf "output HEADLESS-1 resolution 1920x1080\n" > /tmp/sway.cfg
-            # A plain copy: sway's file capabilities are refused inside CI containers.
+            # A plain copy: the packaged sway has file capabilities, refused inside CI containers.
             cp /usr/bin/sway /tmp/sway
             WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 /tmp/sway -c /tmp/sway.cfg > /tmp/sway.log 2>&1 &
             for i in $(seq 1 50); do [ -S /run/user/1000/wayland-1 ] && break; sleep 0.2; done
