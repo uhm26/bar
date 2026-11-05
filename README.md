@@ -89,6 +89,7 @@ Measured on a 6-core desktop with two monitors:
 | | |
 |---|---|
 | CPU while idle | about 0.15 % of one core (it only redraws when something changes) |
+| CPU with the system panel open | about 10 % of one core (its live charts move every second) |
 | Memory | about 290 MB, most of it Qt and the graphics driver |
 | Helpers | `bar-sys` (system stats) and `bar-launcher` (app search): under 1 MB each |
 
