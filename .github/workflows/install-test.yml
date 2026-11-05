@@ -1,0 +1,62 @@
+# Install test (run by hand, e.g. after a release): a clean Arch Linux machine installs the
+# newest release with the README's one-line command, Hyprland checks the config it wrote,
+# then the bar starts on a screenless Wayland display (sway, software drawing) and is
+# screenshotted. Hyprland itself needs a real screen, so the bar runs without Hyprland
+# here: workspaces stay empty, everything else must load.
+name: install-test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean-arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Arch packages (what a new user would have, plus a screenless display)
+        run: |
+          pacman -Syu --noconfirm --needed hyprland quickshell ttf-roboto-mono-nerd \
+            pipewire wireplumber sway grim dbus curl util-linux mesa
+          useradd -m tester
+          mkdir -p /run/user/1000 && chown tester /run/user/1000 && chmod 700 /run/user/1000
+
+      - name: Install with the README command
+        run: |
+          runuser -u tester -- sh -c '
+            set -eu
+            mkdir -p ~/.config/hypr && cp /usr/share/hypr/hyprland.lua ~/.config/hypr/
+            printf "y\n" | script -qec "curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | sh" /dev/null | tee ~/install.log
+            grep -q "installed the shell" ~/install.log
+            grep -q "require(\"bar\")" ~/.config/hypr/hyprland.lua
+          '
+
+      - name: Hyprland accepts the config
+        run: |
+          runuser -u tester -- env XDG_RUNTIME_DIR=/run/user/1000 \
+            Hyprland --verify-config --config /home/tester/.config/hypr/hyprland.lua | tail -n 3
+
+      - name: Start the bar on a screenless display
+        run: |
+          runuser -u tester -- env XDG_RUNTIME_DIR=/run/user/1000 dbus-run-session -- sh -c '
+            printf "output HEADLESS-1 resolution 1920x1080\n" > /tmp/sway.cfg
+            WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 sway -c /tmp/sway.cfg > /tmp/sway.log 2>&1 &
+            for i in $(seq 1 50); do [ -S /run/user/1000/wayland-1 ] && break; sleep 0.2; done
+            export WAYLAND_DISPLAY=wayland-1 QT_QUICK_BACKEND=software
+            qs -c bar > /tmp/qs.log 2>&1 &
+            sleep 10
+            grim /tmp/bar.png
+            qs -c bar ipc call bar drawer sys; sleep 2; grim /tmp/system.png
+          '
+          cat /tmp/qs.log
+          grep -q "Configuration Loaded" /tmp/qs.log
+          pgrep -x bar-sys > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: install-test
+          path: |
+            /tmp/qs.log
+            /tmp/sway.log
+            /tmp/*.png
+            /home/tester/install.log
