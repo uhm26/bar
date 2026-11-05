@@ -1,0 +1,25 @@
+[package]
+name = "bar"
+version = "0.1.0"
+edition = "2024"
+
+# Helpers for the Quickshell bar (docs/decisions/001): system stats as JSON lines ...
+[[bin]]
+name = "bar-sys"
+path = "src/main.rs"
+
+# ... and the app launcher's fast half (desktop index, ranking, launching).
+[[bin]]
+name = "bar-launcher"
+path = "src/bin/launcher.rs"
+
+[dependencies]
+# none: /proc parsing, .desktop parsing, ranking and JSON output are small enough to own
+
+[lints.clippy]
+too_many_lines = "warn"   # pedantic lint, off unless enabled; limit in clippy.toml
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

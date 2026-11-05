@@ -1,0 +1,64 @@
+# Checks on every push and pull request, in Arch Linux (the one supported system): lints +
+# tests for the helpers, and install.sh under dash (strict POSIX) with a fake release.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed base-devel rust git
+      - uses: actions/checkout@v5
+      - name: Clippy
+        run: cargo clippy -q --all-targets -- -D warnings
+      - name: Test
+        run: cargo test -q
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: shellcheck --shell=sh install.sh
+
+  installer:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed dash
+      - uses: actions/checkout@v5
+      - name: Install a fake release under dash
+        run: |
+          set -eu
+          a=bar-x86_64-linux
+          m="$RUNNER_TEMP/mirror/v9.9.9"
+          mkdir -p "$m" "$RUNNER_TEMP/pkg/$a" "$RUNNER_TEMP/fakebin"
+          printf '#!/bin/sh\necho fake\n' > "$RUNNER_TEMP/pkg/$a/bar-sys"
+          cp "$RUNNER_TEMP/pkg/$a/bar-sys" "$RUNNER_TEMP/pkg/$a/bar-launcher"
+          cp -r shell "$RUNNER_TEMP/pkg/$a/shell"
+          tar -C "$RUNNER_TEMP/pkg" -czf "$m/$a.tar.gz" "$a"
+          (cd "$m" && sha256sum "$a.tar.gz" > "$a.tar.gz.sha256")
+          # A stand-in for Hyprland, and a home with a Hyprland config.
+          printf '#!/bin/sh\n' > "$RUNNER_TEMP/fakebin/hyprctl"; chmod +x "$RUNNER_TEMP/fakebin/hyprctl"
+          export PATH="$RUNNER_TEMP/fakebin:$PATH" HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME/.config/hypr" && echo "-- mine" > "$HOME/.config/hypr/hyprland.lua"
+          BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr
+          test "$("$HOME/.local/bin/bar-sys")" = fake
+          test -f "$HOME/.config/quickshell/bar/shell.qml"
+          head -n 1 "$HOME/.config/quickshell/bar/shell.qml" | grep -q '^//@ pragma IconTheme hicolor$'
+          grep -q bar "$HOME/.config/hypr/hyprland.lua" && { echo "--no-hypr changed the config" >&2; exit 1; }
+          dash install.sh --uninstall
+          test ! -e "$HOME/.local/bin/bar-sys"
+          test ! -e "$HOME/.config/quickshell/bar"
+          # A broken checksum must stop the install.
+          echo "0  $a.tar.gz" > "$m/$a.tar.gz.sha256"
+          if BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr; then
+            echo "installed despite a bad checksum" >&2; exit 1
+          fi
+          test ! -e "$HOME/.local/bin/bar-sys"
+          dash install.sh --help > /dev/null
+          if dash install.sh --nope 2>/dev/null; then echo "unknown option accepted" >&2; exit 1; fi

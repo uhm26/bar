@@ -1,0 +1,52 @@
+# Release: push a tag `v<version>` (e.g. v0.1.0) matching Cargo.toml. This tests the helpers,
+# builds them in a clean Arch Linux container (the one supported system) and publishes
+# `bar-x86_64-linux.tar.gz` (helpers + shell) and its `.sha256`, which install.sh downloads.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Arch packages
+        run: pacman -Syu --noconfirm --needed base-devel rust git github-cli
+
+      - uses: actions/checkout@v5
+
+      - name: Check the tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$version\"$" Cargo.toml \
+            || { echo "Cargo.toml is not at version $version" >&2; exit 1; }
+
+      - name: Test
+        run: cargo test -q --release
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package
+        run: |
+          a=bar-x86_64-linux
+          mkdir -p "dist/$a"
+          cp target/release/bar-sys target/release/bar-launcher README.md LICENSE-MIT LICENSE-APACHE "dist/$a/"
+          cp -r shell "dist/$a/shell"
+          tar -C dist -czf "dist/$a.tar.gz" "$a"
+          (cd dist && sha256sum "$a.tar.gz" > "$a.tar.gz.sha256")
+          ls -l dist "dist/$a"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          gh release create "$GITHUB_REF_NAME" dist/bar-x86_64-linux.tar.gz dist/bar-x86_64-linux.tar.gz.sha256 \
+            --title "bar ${GITHUB_REF_NAME#v}" \
+            --notes "Install: \`curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | sh\`"
