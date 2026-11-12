@@ -38,6 +38,7 @@ jobs:
           mkdir -p "dist/$a"
           cp target/release/bar-sys target/release/bar-launcher README.md LICENSE-MIT LICENSE-APACHE "dist/$a/"
           cp -r shell "dist/$a/shell"
+          cp -r extra "dist/$a/extra" # copied in only by install.sh --extra
           tar -C dist -czf "dist/$a.tar.gz" "$a"
           (cd dist && sha256sum "$a.tar.gz" > "$a.tar.gz.sha256")
           ls -l dist "dist/$a"

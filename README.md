@@ -82,6 +82,20 @@ take them out of your autostart: only one program can show notifications and tra
 Bind any of these to keys in your Hyprland config. A lock key, for example:
 `hl.bind("SUPER + L", hl.dsp.global("quickshell:lock"))`.
 
+## Extras
+
+Optional additions the default bar leaves out. Install them with `--extra`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/uhm26/bar/main/install.sh | sh -s -- --extra
+```
+
+Updates keep them; `--no-extra` removes them.
+
+| Extra | How |
+|---|---|
+| AMOLED: every background pure black | `qs -c bar ipc call extra toggleAmoled` (remembered) |
+
 ## How heavy is it
 
 Measured on a 6-core desktop with two monitors:
@@ -112,6 +126,9 @@ cargo build --release
 cp target/release/bar-sys target/release/bar-launcher ~/.local/bin/
 qs -p shell
 ```
+
+To try the extras on a bar run from the repo: `./extras on` (and `./extras off`). It
+restarts the bar.
 
 ## About
 

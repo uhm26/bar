@@ -40,6 +40,7 @@ jobs:
           printf '#!/bin/sh\necho fake\n' > "$RUNNER_TEMP/pkg/$a/bar-sys"
           cp "$RUNNER_TEMP/pkg/$a/bar-sys" "$RUNNER_TEMP/pkg/$a/bar-launcher"
           cp -r shell "$RUNNER_TEMP/pkg/$a/shell"
+          cp -r extra "$RUNNER_TEMP/pkg/$a/extra"
           tar -C "$RUNNER_TEMP/pkg" -czf "$m/$a.tar.gz" "$a"
           (cd "$m" && sha256sum "$a.tar.gz" > "$a.tar.gz.sha256")
           # A stand-in for Hyprland, and a home with a Hyprland config.
@@ -52,6 +53,15 @@ jobs:
           test "$(cat "$HOME/.config/quickshell/bar/.installed-by-bar")" = 9.9.9
           head -n 1 "$HOME/.config/quickshell/bar/shell.qml" | grep -q '^//@ pragma IconTheme hicolor$'
           grep -q bar "$HOME/.config/hypr/hyprland.lua" && { echo "--no-hypr changed the config" >&2; exit 1; }
+          # Extras: only with --extra, kept by a plain update, gone with --no-extra.
+          s="$HOME/.config/quickshell/bar"
+          test ! -e "$s/extra"
+          BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr --extra
+          test -f "$s/extra/Extra.qml"
+          BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr
+          test -f "$s/extra/Extra.qml"
+          BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr --no-extra
+          test ! -e "$s/extra"
           dash install.sh --uninstall
           test ! -e "$HOME/.local/bin/bar-sys"
           test ! -e "$HOME/.config/quickshell/bar"

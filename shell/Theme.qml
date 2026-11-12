@@ -16,7 +16,8 @@ Singleton {
     onGlassChanged: { Saved.glass = glass; shareGlass(); }
     Component.onCompleted: shareGlass()
 
-    readonly property color bg: "#0d0d0d"
+    // bg and menu are writable so an extra (extra/, `install.sh --extra`) can recolor them.
+    property color bg: "#0d0d0d"
     readonly property real surfaceOpacity: glass ? 0.35 : 1 // bar + drawers
     // White over the bar at a given alpha (flat: same look as #1a1a1a / #262626 on #0d0d0d).
     // Only alpha differs between modes, so toggling fades instead of passing through gray.
@@ -24,7 +25,7 @@ Singleton {
     readonly property color containerHigh: Qt.rgba(1, 1, 1, glass ? 0.13 : 0.103) // open / selected
     readonly property color hover: Qt.rgba(1, 1, 1, 0.08) // M3 hover state layer
     // Floating menus: always opaque (a see-through menu over text is unreadable).
-    readonly property color menu: "#1c1c1c"
+    property color menu: "#1c1c1c"
     readonly property color outline: Qt.rgba(1, 1, 1, 0.08)
     readonly property color fg: "#d4d4d4"
     readonly property color bright: "#ffffff"

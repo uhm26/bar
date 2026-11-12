@@ -1,0 +1,19 @@
+#!/bin/sh
+# Try the extras on a bar run from this folder (`qs -p shell`): `./extras on`, `./extras off`.
+# Links extra/ into shell/ (git ignores the link) and restarts the bar: a hot reload doesn't
+# pick up the new folder.
+set -eu
+cd "$(dirname "$0")"
+case "${1:-}" in
+    on) ln -sfn ../extra shell/extra ;;
+    off) rm -f shell/extra ;;
+    *) echo "usage: ./extras on|off" >&2; exit 2 ;;
+esac
+qs -p shell kill >/dev/null 2>&1 || true
+# Wait for the old bar to exit, or it would still hold the global shortcuts.
+while qs -p shell ipc show >/dev/null 2>&1; do sleep 0.1; done
+# Screens at different refresh rates need the simple animation driver (see shell.qml).
+n=$(hyprctl monitors | grep -oE '@[0-9]+[.0-9]* at' | cut -d. -f1 | sort -u | wc -l)
+if [ "$n" -gt 1 ]; then export QSG_USE_SIMPLE_ANIMATION_DRIVER=1; fi
+setsid -f qs -p "$PWD/shell" >/dev/null 2>&1
+echo "extras $1 (bar restarted)"

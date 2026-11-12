@@ -54,6 +54,19 @@ ShellRoot {
         function toggle(): void { root.toggleLauncher(); }
     }
 
+    // Extras: extra/Extra.qml is there only in an `install.sh --extra` install.
+    FileView {
+        id: extraFile
+        path: Quickshell.shellPath("extra/Extra.qml")
+        blockLoading: true
+        printErrors: false // plain install: no file
+    }
+    LazyLoader {
+        active: true
+        // Empty when there is none: a set source is resolved (and warned about) even inactive.
+        source: extraFile.text() !== "" ? extraFile.path : ""
+    }
+
     IpcHandler {
         target: "bar"
         function toggleGlass(): void { Theme.glass = !Theme.glass; }

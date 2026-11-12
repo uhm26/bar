@@ -5,7 +5,7 @@
 # Re-run it to update.
 #
 #   curl -fsSL https://raw.githubusercontent.com/uhm26/bar/main/install.sh | sh
-#   sh install.sh [--version X.Y.Z] [--no-hypr] [--uninstall]
+#   sh install.sh [--version X.Y.Z] [--extra | --no-extra] [--no-hypr] [--uninstall]
 #
 # Everything runs inside main(), called on the last line: if the download is cut off,
 # nothing runs.
@@ -29,6 +29,8 @@ usage: install.sh [options]
 
 options:
   --version X.Y.Z  install this version instead of the latest
+  --extra          also install the extras (kept on updates; see README)
+  --no-extra       drop the extras again
   --no-hypr        don't touch the Hyprland config (print what to add instead)
   --uninstall      remove the bar, its helpers and its Hyprland lines
   -h, --help       show this
@@ -98,6 +100,14 @@ install_helpers() {
     say "installed $HELPERS to $bin"
 }
 
+# Extras (extra/ in the release): on with --extra, off with --no-extra, else as installed now.
+pick_extra() {
+    if [ -z "$extra" ]; then
+        if [ -e "$shell_dir/$MARK" ] && [ -d "$shell_dir/extra" ]; then extra=1; else extra=0; fi
+    fi
+    [ "$extra" = 0 ] || [ -d "$tmp/$ASSET/extra" ] || die "release $tag has no extras (try a newer one)"
+}
+
 install_shell() {
     if [ -e "$shell_dir" ] && [ ! -e "$shell_dir/$MARK" ]; then
         old="$shell_dir.backup-$(date +%Y%m%d-%H%M%S)"
@@ -107,11 +117,13 @@ install_shell() {
     rm -rf "$shell_dir.new"
     mkdir -p "${shell_dir%/*}"
     cp -r "$tmp/$ASSET/shell" "$shell_dir.new"
+    if [ "$extra" = 1 ]; then cp -r "$tmp/$ASSET/extra" "$shell_dir.new/extra"; fi
     set_icon_theme "$shell_dir.new/shell.qml"
     printf '%s\n' "${tag#v}" > "$shell_dir.new/$MARK" # the version, for the updater
     rm -rf "$shell_dir"
     mv "$shell_dir.new" "$shell_dir"
     say "installed the shell to $shell_dir"
+    if [ "$extra" = 1 ]; then say "extras on (AMOLED: qs -c bar ipc call extra toggleAmoled)"; fi
 }
 
 # The bar draws app icons from an icon theme: use the desktop's own (GTK setting), else a
@@ -172,7 +184,7 @@ snippet() {
 -- Added by the bar's installer (remove with: install.sh --uninstall).
 hl.on("hyprland.start", function()
     -- Screens at different refresh rates need Qt's simple animation driver to stay smooth.
-    hl.exec_cmd("sh -c 'n=$(hyprctl monitors | grep -oE "@[0-9]+[.0-9]* at" | cut -d. -f1 | sort -u | wc -l); [ "$n" -gt 1 ] && export QSG_USE_SIMPLE_ANIMATION_DRIVER=1; exec qs -c bar'")
+    hl.exec_cmd("sh -c 'n=$(hyprctl monitors | grep -oE \"@[0-9]+[.0-9]* at\" | cut -d. -f1 | sort -u | wc -l); [ \"$n\" -gt 1 ] && export QSG_USE_SIMPLE_ANIMATION_DRIVER=1; exec qs -c bar'")
 end)
 -- App launcher: SUPER + R (replaces whatever SUPER + R did before, e.g. the default app menu).
 hl.unbind("SUPER + R")
@@ -245,10 +257,13 @@ main() {
     shell_dir="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/bar"
     version=""
     hypr=1
+    extra=""
     remove=0
     while [ $# -gt 0 ]; do
         case "$1" in
             --version) [ $# -ge 2 ] || die "--version needs a version"; version=${2#v}; shift ;;
+            --extra) extra=1 ;;
+            --no-extra) extra=0 ;;
             --no-hypr) hypr=0 ;;
             --uninstall) remove=1 ;;
             -h | --help) usage; return 0 ;;
@@ -263,6 +278,7 @@ main() {
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT INT TERM
     download
+    pick_extra
     install_helpers
     install_shell
     setup_hypr
