@@ -1,6 +1,6 @@
 [package]
 name = "bar"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 # Helpers for the Quickshell bar (docs/decisions/001): system stats as JSON lines ...
