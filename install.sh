@@ -164,6 +164,8 @@ warn_conflicts() {
 
 hypr_dir() { echo "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"; }
 INCLUDE='require("bar") -- the bar (added by its installer)'
+# A config that loads bar.lua itself (github.com/uhm26/hypr does) needs no line of ours.
+LOADS_ITSELF='pcall(require, "bar")'
 
 snippet() {
     cat <<'LUA'
@@ -197,7 +199,7 @@ setup_hypr() {
         say "then run this installer again to add the bar to it"
         return 0
     fi
-    if grep -qF "$INCLUDE" "$main"; then
+    if grep -qF "$INCLUDE" "$main" || grep -qF "$LOADS_ITSELF" "$main"; then
         snippet > "$d/bar.lua"
         say "your Hyprland config already loads the bar (updated $d/bar.lua)"
         return 0
