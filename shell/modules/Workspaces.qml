@@ -1,6 +1,7 @@
 // Workspaces of this screen as numbers. A white pill slides to the active one and
 // stretches on the way: the leading edge moves first. Click switches.
 import QtQuick
+import Quickshell
 import qs
 import qs.ui
 import Quickshell.Hyprland
@@ -54,7 +55,9 @@ Chip {
 
         Row {
             Repeater {
-                model: root.list
+                // ScriptModel: a workspace coming or going adds or drops one number; a plain array
+                // rebuilt every number (and its click area) on each change.
+                model: ScriptModel { values: root.list }
                 Label {
                     id: num
                     required property var modelData

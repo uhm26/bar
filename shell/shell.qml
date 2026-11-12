@@ -1,9 +1,10 @@
 //@ pragma IconTheme mono
 // ^ icon theme for app and menu icons (without one Qt finds none). install.sh sets it to
 //   your desktop's theme.
-//@ pragma Env QSG_USE_SIMPLE_ANIMATION_DRIVER=1
-// ^ with two monitors at different refresh rates, Qt's default driver paces animations to
-//   the slower one; the simple driver keeps each screen smooth.
+// Screens at different refresh rates (e.g. 165 + 75 Hz): Qt's default animation driver paces
+// every animation to the slower one, so bar.lua starts the bar with
+// QSG_USE_SIMPLE_ANIMATION_DRIVER=1 then. Only then: that driver also redraws every window on
+// every frame (measured: about 1.5x to 3x the cost of a drawer animation).
 // Entry: one bar per screen, plus IPC.
 // Toggle flat/glass: `qs -p shell ipc call bar toggleGlass`.
 // Open/close a drawer on the focused monitor: `qs -p shell ipc call bar drawer <name>`,

@@ -171,7 +171,8 @@ snippet() {
     cat <<'LUA'
 -- Added by the bar's installer (remove with: install.sh --uninstall).
 hl.on("hyprland.start", function()
-    hl.exec_cmd("qs -c bar")
+    -- Screens at different refresh rates need Qt's simple animation driver to stay smooth.
+    hl.exec_cmd("sh -c 'n=$(hyprctl monitors | grep -oE "@[0-9]+[.0-9]* at" | cut -d. -f1 | sort -u | wc -l); [ "$n" -gt 1 ] && export QSG_USE_SIMPLE_ANIMATION_DRIVER=1; exec qs -c bar'")
 end)
 -- App launcher: SUPER + R (replaces whatever SUPER + R did before, e.g. the default app menu).
 hl.unbind("SUPER + R")
