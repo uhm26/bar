@@ -1,7 +1,3 @@
-    v=$(Hyprland --version 2>/dev/null | head -n 1 | cut -d" " -f2 || true)
-    case "$v" in
-        0.[0-9].* | 0.[1-4][0-9].* | 0.5[0-6].*) say "note: Hyprland $v is old; the bar is made for 0.57 and newer (update: sudo pacman -Syu)" ;;
-    esac
 #!/bin/sh
 # bar installer (Arch Linux + Hyprland): downloads the prebuilt bar from GitHub releases,
 # checks its SHA-256, puts the shell in ~/.config/quickshell/bar and its two helper
