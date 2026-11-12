@@ -49,6 +49,7 @@ jobs:
           BAR_MIRROR="$RUNNER_TEMP/mirror" dash install.sh --version 9.9.9 --no-hypr
           test "$("$HOME/.local/bin/bar-sys")" = fake
           test -f "$HOME/.config/quickshell/bar/shell.qml"
+          test "$(cat "$HOME/.config/quickshell/bar/.installed-by-bar")" = 9.9.9
           head -n 1 "$HOME/.config/quickshell/bar/shell.qml" | grep -q '^//@ pragma IconTheme hicolor$'
           grep -q bar "$HOME/.config/hypr/hyprland.lua" && { echo "--no-hypr changed the config" >&2; exit 1; }
           dash install.sh --uninstall

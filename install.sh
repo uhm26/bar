@@ -108,7 +108,7 @@ install_shell() {
     mkdir -p "${shell_dir%/*}"
     cp -r "$tmp/$ASSET/shell" "$shell_dir.new"
     set_icon_theme "$shell_dir.new/shell.qml"
-    : > "$shell_dir.new/$MARK"
+    printf '%s\n' "${tag#v}" > "$shell_dir.new/$MARK" # the version, for the updater
     rm -rf "$shell_dir"
     mv "$shell_dir.new" "$shell_dir"
     say "installed the shell to $shell_dir"
